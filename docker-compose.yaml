@@ -1,0 +1,9 @@
+version: '3.9'
+services:
+  python: # service/container name
+    image: python # image name
+    build: 
+      context: .
+      dockerfile: .Dockerfile
+    volumes:
+      - ../ext-abs-text-summarization:/root/projects/
