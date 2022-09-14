@@ -91,13 +91,6 @@ def save_csv_shuffled(dataset, mode, args):
         os.makedirs('../dataset')
     df.to_csv(f'../dataset/{mode}_shuffled_seed{args.seed}.csv')
     print(f"{mode} saved")
-    
-# config = dict(
-#     data = "xsum",    
-#     orig_source_length = 512,
-#     max_target_length = 36,
-#     seed = 42,
-# )
         
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", help="specify dataset", type=str)
