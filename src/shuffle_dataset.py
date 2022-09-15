@@ -73,24 +73,23 @@ def shuffle_sentence(dataset):
 
 def save_csv(dataset, mode):
     '''
-    save shuffled dataset as csv
+    save unshuffled dataset as csv
     '''
     df = pd.DataFrame(zip(dataset['id'], dataset['document'], dataset['summary']),
                columns =['id', 'document', 'summary'])
-    
+    if not os.path.exists('../dataset'):
+        os.makedirs('../dataset')    
     df.to_csv(f'../dataset/{mode}.csv')
-    print(f"{mode} saved")    
+    print(f"unshuffled {mode} saved")    
     
 def save_csv_shuffled(dataset, mode, args):
     '''
-    save unshuffled dataset as csv
+    save shuffled dataset as csv
     '''
     df = pd.DataFrame(zip(dataset[0], dataset[1], dataset[2]),
                columns =['id', 'document', 'summary'])
-    if not os.path.exists('../dataset'):
-        os.makedirs('../dataset')
     df.to_csv(f'../dataset/{mode}_shuffled_seed{args.seed}.csv')
-    print(f"{mode} saved")
+    print(f"shuffled {mode} saved")
         
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", help="specify dataset", type=str)
