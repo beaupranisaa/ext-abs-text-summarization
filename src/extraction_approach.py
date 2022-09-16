@@ -7,8 +7,10 @@ from nltk.tokenize import word_tokenize
 from nltk import sent_tokenize
 nltk.download('stopwords')
 
-# from sumy.parsers.plaintext import PlaintextParser
-# from sumy.nlp.tokenizers import Tokenizer
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from extractive.lsa import *
+
 # from sumy.summarizers.luhn import LuhnSummarizer
 # from sumy.summarizers.text_rank import TextRankSummarizer
 # from sumy.summarizers.lsa import LsaSummarizer
@@ -161,26 +163,33 @@ class SentenceLevel:
         paragraph_split = sent_tokenize(source_text)
         sentences = [i for i in paragraph_split]
         sentence_count = len(sentences)
-        token_count = torch.count_nonzero(source_ids)
-        n_token_per_sentence = token_count/sentence_count
-        n_sum_sentence = int(math.floor(max_source_len/n_token_per_sentence))
+        # token_count = torch.count_nonzero(source_ids)
+        # n_token_per_sentence = token_count/sentence_count
+        # n_sum_sentence = int(math.floor(max_source_len/n_token_per_sentence))
         parser = PlaintextParser.from_string(source_text,Tokenizer("english")) #remove summarize: 
         summarizer = LsaSummarizer()
-        summary, summary_len = self._get_summary(summarizer, parser, n_sum_sentence)
+        summary, summary_len = self._get_summary(summarizer, parser, sentence_count)
+        print(summary)
+        print(summary_len)
         return  summary, summary_len
     
-    def _get_summary(self, summarizer, parser, n_sum_sentence):    
-        tokenizer = T5Tokenizer.from_pretrained("../model/512_256_head-only/checkpoints/best_model")
+    def _get_summary(self, summarizer, parser, sentence_count):    
+        tokenizer = T5Tokenizer.from_pretrained("t5-small")
         # tokenizer = T5Tokenizer.from_pretrained("t5-small")
         sum_candidates = []
-        for i in range(n_sum_sentence-1, n_sum_sentence +2):
+        for i in range(sentence_count):
             summary = summarizer(parser.document,i)
             full_summary = ' '.join([sentence._text for sentence in summary])
             sum_candidates.append(full_summary)
-        source = tokenizer.batch_encode_plus(sum_candidates, max_length = 2048, pad_to_max_length=True, truncation=True, padding="max_length", return_tensors="pt", )    # change to 1024 from 512    
-        token_count = torch.count_nonzero(source['input_ids'], axis = 1)   
-        idx = torch.argmin(token_count % self.max_source_len)
-        return sum_candidates[idx], token_count[idx]
+        source = tokenizer.batch_encode_plus(sum_candidates, max_length = 1024, pad_to_max_length=True, truncation=True, padding="max_length", return_tensors="pt", )    # change to 1024 from 512    
+        token_count = torch.count_nonzero(source['input_ids'], axis = 1)
+        idx = (token_count == min(token_count, key=lambda x:abs(x-self.max_source_len))).nonzero().flatten()
+        return sum_candidates[idx], token_count[idx][0]
+    
+    
+    
+    
+    
 
     def _get_bertbased(self, source_text, source_ids, max_source_len, mode):
         # try:
