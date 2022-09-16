@@ -1,6 +1,11 @@
 import math
 import re
 import torch
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk import sent_tokenize
+nltk.download('stopwords')
 
 # from sumy.parsers.plaintext import PlaintextParser
 # from sumy.nlp.tokenizers import Tokenizer
@@ -8,22 +13,16 @@ import torch
 # from sumy.summarizers.text_rank import TextRankSummarizer
 # from sumy.summarizers.lsa import LsaSummarizer
 
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk import sent_tokenize
-nltk.download('stopwords')
-
 # from summarizer import Summarizer #bertbase
 # from summarizer.sbert import SBertSummarizer
 
-from sklearn.cluster import KMeans
-from sklearn.neighbors import NearestNeighbors
-from scipy.spatial import distance
+# from sklearn.cluster import KMeans
+# from sklearn.neighbors import NearestNeighbors
+# from scipy.spatial import distance
 import numpy as np
 import numpy.matlib
 
-from sklearn.feature_extraction.text import TfidfVectorizer
+# from sklearn.feature_extraction.text import TfidfVectorizer
 
 # from classic_extractive import *
 
@@ -102,17 +101,14 @@ class SentenceLevel:
         self.mode = mode
     
     def shorten(self, approach):
-        if "luhn" in approach:
+        if approach == "luhn":
             source_text_short, source_text_short_len = self._get_luhn(self.source_text, self.source_ids, self.max_source_len, self.mode)
             
         elif approach == "textrank":
             source_text_short, source_text_short_len = self._get_textrank(self.source_text, self.source_ids, self.max_source_len, self.mode)
             
-        elif "lsa" in approach:
+        elif approach == "lsa":
             source_text_short, source_text_short_len = self._get_lsa(self.source_text, self.source_ids, self.max_source_len, self.mode)
-        
-        elif "stopwords" in approach:
-            source_text_short, source_text_short_len = self._get_stopwords_removed(self.source_text, self.mode)
 
         elif approach == "bertbased":
             source_text_short, source_text_short_len = self._get_bertbased(self.source_text, self.source_ids, self.max_source_len, self.mode)
@@ -323,18 +319,6 @@ class SentenceLevel:
         except:
             return source_text, self.source_len
     
-        
-    def _find_closest_args(self, sentence_features, cluster_center):
-        
-        distance = np.zeros((cluster_center.shape[0],sentence_features.shape[0]))
-        for j, centroid in enumerate(cluster_center):
-            # distance = np.zeros((sentence_features.shape[0]-1,cluster_center.shape[0]-1))
-            for i, feature in enumerate(sentence_features):
-                value = np.linalg.norm(feature - centroid)
-                distance[j,i] = value
-        indices = np.argmin(distance, axis = 1)
-        return indices    
-    
     def _get_bertbased_full(self,source_text, source_ids, max_source_len, mode):
         try:
             if mode == "combo": 
@@ -361,152 +345,4 @@ class SentenceLevel:
             return sum_candidates[idx], token_count[idx]
         except:
             print("oops")
-            return source_text, self.source_len
- 
-    def _get_sbertbased(self,source_text, source_ids, max_source_len, mode):
-        try: 
-            if mode == "combo": 
-                sentence_count = source_text.count(".") + 1
-            else: sentence_count = source_text.count("\n") + 1 # count number of sentences
-            token_count = torch.count_nonzero(source_ids)
-            n_token_per_sentence = token_count/sentence_count
-            n_sum_sentence = int(math.floor(max_source_len/n_token_per_sentence))
-            summarizer_sbert = SBertSummarizer('paraphrase-MiniLM-L6-v2')
-            tokenizer = T5Tokenizer.from_pretrained("t5-small")
-            sum_candidates = []
-    #         print("HI: ",n_sum_sentence)
-            for i in range(n_sum_sentence-1, n_sum_sentence +2):
-                summary = summarizer_sbert(source_text, num_sentences = i)
-                full_summary = ''.join(summary)
-                sum_candidates.append(full_summary)
-            source = tokenizer.batch_encode_plus(sum_candidates, max_length = 1024, pad_to_max_length=True, truncation=True, padding="max_length", return_tensors="pt", )  # change to 1024 from 512  
-            token_count = torch.count_nonzero(source['input_ids'], axis = 1)   
-            idx = torch.argmin(token_count % self.max_source_len)
-            return sum_candidates[idx], token_count[idx]
-        except:
-            return source_text, self.source_len
-        
-    def _get_sbertbased_textrank(self,source_text, source_ids, max_source_len, mode):
-        if mode == "combo": 
-            sentence_count = source_text.count(".") + 1
-        else: sentence_count = source_text.count("\n") + 1 # count number of sentences
-        token_count = torch.count_nonzero(source_ids)
-        n_token_per_sentence = token_count/sentence_count
-        n_sum_sentence = int(math.floor(max_source_len/n_token_per_sentence))
-        nlp = build_trf_nlp_pipeline()
-        tokenizer = T5Tokenizer.from_pretrained("t5-small")
-        sum_candidates = []
-        for i in range(n_sum_sentence-1, n_sum_sentence +2):
-            summary = sentence_summary_trf(source_text, nlp, num_sentences = i)
-            full_summary = ''.join(summary)
-            full_summary = full_summary.replace("\n","")
-            full_summary = full_summary.replace("  ", " ")
-            sum_candidates.append(full_summary)
-        source = tokenizer.batch_encode_plus(sum_candidates, max_length = 2048, pad_to_max_length=True, truncation=True, padding="max_length", return_tensors="pt", )   # change to 1024 from 512     
-        token_count = torch.count_nonzero(source['input_ids'], axis = 1)   
-        idx = torch.argmin(token_count % self.max_source_len)
-        return sum_candidates[idx], token_count[idx]
-
-    def _get_bertbased_elbow(self,source_text, source_ids, max_source_len, mode):
-        warnings.filterwarnings('ignore')
-        try:
-            paragraph_split = sent_tokenize(source_text)
-            sentences = [i for i in paragraph_split]
-
-            model_class, tokenizer_class, pretrained_weights = (transformers.DistilBertModel, transformers.DistilBertTokenizer, 'distilbert-base-uncased')
-
-            ## Want BERT instead of distilBERT? Uncomment the following line:
-            #model_class, tokenizer_class, pretrained_weights = (ppb.BertModel, ppb.BertTokenizer, 'bert-base-uncased')
-
-            # Load pretrained model/tokenizer
-
-            tokenizer = tokenizer_class.from_pretrained(pretrained_weights)
-            model = model_class.from_pretrained(pretrained_weights)
-
-            source = tokenizer.batch_encode_plus(
-                sentences,
-                max_length = 512, #self.max_source_len
-                pad_to_max_length=True,
-                truncation=True,
-                padding="max_length",
-                return_tensors="pt",
-            )
-            source_ids = source["input_ids"].squeeze()
-            source_mask = source["attention_mask"].squeeze()
-
-            with torch.no_grad():
-                hidden_states = model(source_ids, attention_mask=source_mask)
-
-            last_hidden_states = hidden_states[0]
-            sentence_features = last_hidden_states[:,0,:].detach().numpy() #[cls]
-
-            Sum_of_squared_distances = [KMeans(n_clusters=k, random_state=42).fit(sentence_features).inertia_ for k in range(1,len(paragraph_split))]
-
-            # elbow = 15 # ave from 128 samples
-            elbow = self._get_elbow_point(Sum_of_squared_distances)
-            # print("ELBOW: ", elbow)
-
-            number_extract = elbow
-            print("Elbow: ", number_extract)
-
-            # print("Performing KMeans.............")
-            kmeans = KMeans(n_clusters=number_extract, 
-                            random_state=42).fit(sentence_features)
-
-            cluster_center = kmeans.cluster_centers_
-
-            # print("Performing NearestNeighbors .............")
-            nbrs = NearestNeighbors(n_neighbors= 1, 
-                                    algorithm='brute').fit(sentence_features)
-            distances, indices = nbrs.kneighbors(
-                              cluster_center.reshape(number_extract,-1))
-            indices = np.sort(indices.reshape(1,-1))
-
-            topic_answer = [paragraph_split[i] for i in indices[0]]
-
-            full_summary = ' '.join([sentence for sentence in topic_answer])
-
-            # print(full_summary)
-
-            tokenizerT5 = T5Tokenizer.from_pretrained("t5-small")
-            source_new = tokenizerT5.batch_encode_plus(topic_answer, max_length = 2048, pad_to_max_length=True, truncation=True, padding="max_length", return_tensors="pt", )
-            token_count = torch.count_nonzero(source_new['input_ids']) 
-
-            return full_summary, token_count, elbow
-        except:
-            return source_text, self.source_len, 0       
-
-    def _get_sbertbased_elbow(self,source_text, source_ids, max_source_len, mode):
-        try: 
-            if mode == "combo": 
-                sentence_count = source_text.count(".") + 1
-            else: 
-                sentence_count = source_text.count("\n") + 1 # count number of sentences
-                # token_count = torch.count_nonzero(source_ids)
-                # n_token_per_sentence = token_count/sentence_count
-                # n_sum_sentence = int(math.floor(max_source_len/n_token_per_sentence))
-                # print("hi")
-                summarizer_sbert = SBertSummarizer('paraphrase-MiniLM-L6-v2')
-                tokenizer = T5Tokenizer.from_pretrained("t5-small")
-                sum_candidates = []
-                # print("hi2")
-        #         print("HI: ",n_sum_sentence)
-                i = 15
-
-                # for i in range(n_sum_sentence-1, n_sum_sentence +2):
-                    # print("hi", i)
-                summary = summarizer_sbert(source_text, num_sentences = i)
-                full_summary = ''.join(summary)
-                # print(full_summary)
-                    # sum_candidates.append(full_summary)
-                source = tokenizer.batch_encode_plus([full_summary], max_length = 2048, pad_to_max_length=True, truncation=True, padding="max_length", return_tensors="pt", )  # change to 1024 from 512  
-                # print("hi3")
-                token_count = torch.count_nonzero(source['input_ids']) #, axis = 1)  
-                # print("===========")
-                # print(token_count)
-                # idx = torch.argmin(token_count % self.max_source_len)
-                # return sum_candidates[1], token_count[1]
-                # print("hi4")
-                return full_summary, token_count
-        except:
             return source_text, self.source_len

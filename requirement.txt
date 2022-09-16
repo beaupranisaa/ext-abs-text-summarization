@@ -1,2 +1,9 @@
-sentencepiece
+numpy-1.23.3
+pandas-1.4.4
+torch-1.12.1+cu116
 datasets
+tokenizers-0.12.1
+transformers-4.22.0
+nltk
+SentencePiece-0.1.97
+

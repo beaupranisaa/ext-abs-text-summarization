@@ -26,6 +26,7 @@ def preparedata(config, args):
 
 def get_dataset( mode, config, args):
     if args.shuffle == True:
+        print("SHUFFLED")
         path =  f"../dataset/{mode}_shuffled_seed{args.seed}.csv"
     else:
         path =  f"../dataset/{mode}.csv"
@@ -34,8 +35,8 @@ def get_dataset( mode, config, args):
     
     ## preprocessed_data.rename(columns = {'Sample ids':'id'}, inplace = True)
     total_row = df.shape[0]
-    df = df[384:]
-    df.set_index(np.arange(0, total_row-384), inplace=True)
+    df = df[1408:]
+    df.set_index(np.arange(0, total_row-1408), inplace=True)
     
     
     config['source_text'] = 'document'
@@ -88,7 +89,7 @@ def process(loader, config, args, mode):
         os.makedirs(path)
 
     for _, data in enumerate(loader, 0):
-        _ = _ + 3
+        _ = _ + 11
         results['Sample ids'].extend(data['ids'].tolist())
         results['Document'].extend(data['source_text'])
         results['Shortened Document'].extend(data['shortened_source_text'])
@@ -123,6 +124,6 @@ if __name__ == "__main__":
 
     train_loader, val_loader, test_loader = preparedata(config, args)
     # process(test_loader, config, args, "test_set")
-    process(val_loader, config, args, "val_set")
+    # process(val_loader, config, args, "val_set")
     process(train_loader, config, args, "train_set")
      
