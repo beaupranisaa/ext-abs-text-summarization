@@ -129,6 +129,4 @@ dmypy.json
 .pyre/
 
 datalength/*
-preprocess/*
-extracted/*
 **/step*
