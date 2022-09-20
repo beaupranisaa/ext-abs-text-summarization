@@ -1,10 +1,5 @@
 import numpy as np
 from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
-from summarizer.BertParent import BertParent
-import matplotlib
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
 from typing import List
 
 
@@ -91,11 +86,13 @@ class ClusterFeatures(object):
     def cluster(self, sentences_count = 1):
         # k = 1 if sentences_count * len(self.features) < 1 else int(len(self.features) * sentences_count)
         k = 1 if sentences_count < 1 else int(sentences_count)
-        print("k: ",k)
+        # print("k: ",k)
         model = self.__get_model(k).fit(self.features)
         centroids = self.__get_centroids(model)
         cluster_args = self.__find_closest_args(centroids)
+        # print(cluster_args)
         sorted_values = sorted(cluster_args.values())
+        # print(sorted_values)
         return sorted_values
 
     # def create_plots(self, k=4, plot_location='./kbert.png', title = ''):
@@ -117,6 +114,7 @@ class KmeansBERTSummarizer(object):
         self.bert_model = BertParent('bert', 'large')
 
     def __vote(self, arg_list):
+        # print("arg_list: ",arg_list)
         all_tally = {}
         for args in arg_list:
             for arg in args:
@@ -124,7 +122,9 @@ class KmeansBERTSummarizer(object):
                     all_tally[arg] += 1
                 else:
                     all_tally[arg] = 1
+        # print("all_tally: ",all_tally)
         to_return = {k: v for k, v in all_tally.items() if v > 1}
+        # print("TO_RETURN: ",to_return)
         return to_return
 
     def __call__(self, source_text, sentences_count = 1):
@@ -132,14 +132,18 @@ class KmeansBERTSummarizer(object):
         paragraph_split = sent_tokenize(source_text)
         sentences = [i for i in paragraph_split]
         
-        self.bert_non_hidden = self.bert_model.create_matrix(sentences)
         self.bert_hidden = self.bert_model.create_matrix(sentences, True)
+        # print(self.bert_hidden.shape)
         
-        bc_non_hidden_args = ClusterFeatures(self.bert_non_hidden).cluster(sentences_count)
+        # bc_non_hidden_args = ClusterFeatures(self.bert_non_hidden).cluster(sentences_count)
         bc_hidden_args = ClusterFeatures(self.bert_hidden).cluster(sentences_count)
+        # print("bc_hidden_args: ",bc_hidden_args)
+        
+        # votes = self.__vote([bc_non_hidden_args, bc_hidden_args])
 
-        votes = self.__vote([bc_non_hidden_args, bc_hidden_args])
-        sorted_keys = sorted(votes.keys())
+        # sorted_keys = sorted(bc_hidden_args.keys())
+        sorted_keys = bc_hidden_args
+        # print("SORTED KEYS: ",sorted_keys)
         if sorted_keys[0] != 0:
             sorted_keys.insert(0, 0)
         res = []
@@ -148,6 +152,7 @@ class KmeansBERTSummarizer(object):
         
         summary = []
         for j in res:
-            summary.append(sentences[j])    
+            summary.append(sentences[j]) 
+        # print(summary)
         return summary
     
