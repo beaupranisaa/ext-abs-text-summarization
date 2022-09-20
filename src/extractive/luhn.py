@@ -1,11 +1,11 @@
-from extract_summarizer import * 
-from collections import Sequence, Counter
-from sys import version_info
 import nltk
 from nltk.corpus import stopwords
+from collections import Sequence
+from sys import version_info
+from extract_summarizer import * 
 
+# python 3
 PY3 = version_info[0] == 3
-
 
 if PY3:
     bytes = bytes
@@ -14,7 +14,6 @@ else:
     bytes = str
     unicode = unicode
 string_types = (bytes, unicode,)
-
 
 class TfDocumentModel(object):
     """Term-Frequency document model (term = word)."""
@@ -111,7 +110,9 @@ class LuhnSummarizer(ExtractSummarizer):
             sentences_count, self.rate_sentence, words)
 
     def _get_significant_words(self, words):
-        words = map(self.normalize_word, words)   
+        words = map(self.normalize_word, words)
+        
+        # words that are not stopwords
         stops = set(stopwords.words('english'))
         self._stop_words = frozenset(stops)
         words = tuple(self.stem_word(w) for w in words if w not in self._stop_words)

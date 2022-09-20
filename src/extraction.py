@@ -33,9 +33,9 @@ def get_dataset( mode, config, args):
     df = pd.read_csv(path)
     
     ## preprocessed_data.rename(columns = {'Sample ids':'id'}, inplace = True)
-    # total_row = df.shape[0]
-    # df = df[1408:]
-    # df.set_index(np.arange(0, total_row-1408), inplace=True)
+    total_row = df.shape[0]
+    df = df[3328:]
+    df.set_index(np.arange(0, total_row-3328), inplace=True)
     
     
     config['source_text'] = 'document'
@@ -88,7 +88,7 @@ def process(loader, config, args, mode):
         os.makedirs(path)
 
     for _, data in enumerate(loader, 0):
-        # _ = _ + 11
+        _ = _ + 26
         results['Sample ids'].extend(data['ids'].tolist())
         results['Document'].extend(data['source_text'])
         results['Shortened Document'].extend(data['shortened_source_text'])

@@ -28,7 +28,6 @@ class Dataset(Dataset):
             source_text (str): column name of source text
             target_text (str): column name of target text
             approach (str): extraction approach
-            mode (str): train, test, validation
         """
         
         self.tokenizer = tokenizer
@@ -36,7 +35,6 @@ class Dataset(Dataset):
         self.data = dataframe
         self.max_source_len = max_source_len
         self.approach = approach
-        self.mode = mode
         self.source_text = self.data[source_text]
         self.target_text = self.data[target_text]
         
@@ -71,9 +69,9 @@ class Dataset(Dataset):
         source_len = torch.count_nonzero(source_ids.to(dtype=torch.long))
         
         if self.approach in ["head-only", "tail-only", "head+tail0.2", "head+tail0.5"]:
-            approach = TokenLevel(self.source_text[index], source_ids, source_len, self.max_source_len, self.mode)
+            approach = TokenLevel(self.source_text[index], source_ids, source_len, self.max_source_len)
         else:
-            approach = SentenceLevel(self.source_text[index], source_ids, source_len, self.max_source_len, self.mode)
+            approach = SentenceLevel(self.source_text[index], source_ids, source_len, self.max_source_len)
             
         source_text_short, source_text_short_len = approach.shorten(self.approach)
 
