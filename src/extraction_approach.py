@@ -126,20 +126,31 @@ class SentenceLevel:
     
     def _get_summary(self, summarizer, sentence_count, parser= None):    
         sum_candidates = []
-        for i in range(sentence_count):
-            if self.approach == "kmeansbert":
-                summary = summarizer(self.source_text,i)
-                full_summary = ' '.join([sentence for sentence in summary])
-            else:
-                summary = summarizer(parser.document,i)
-                full_summary = ' '.join([sentence._text for sentence in summary])
-            sum_candidates.append(full_summary)
+        print("sentence_count: ", sentence_count)
+        if self.approach == "kmeansbert" and sentence_count-2 > 5:
+            start = 5
+            end = sentence_count-2
+        else:
+            start = 0
+            end = sentence_count
+        print('start: ', start,'end: ',end)
+        
+        for i in range(start,end):
+            summary = summarizer(self.source_text,i)
+            full_summary = ' '.join([sentence for sentence in summary])
+            sum_candidates.append(full_summary)           
+            
         source = self.tokenizer.batch_encode_plus(sum_candidates, max_length = 1024, pad_to_max_length=True, truncation=True, padding="max_length", return_tensors="pt", ) 
+
         token_count = torch.count_nonzero(source['input_ids'], axis = 1)
-        print("TOKEN COUNT: ", token_count)
         idx = (token_count == min(token_count, key=lambda x:abs(x-self.max_source_len))).nonzero().flatten()
-        print("IDX: ", idx)
-        return sum_candidates[idx], token_count[idx][0]
+        print(token_count)
+        print(idx)
+        if idx.size(dim=0)>1:
+            idx = idx[0]
+            return sum_candidates[idx], token_count[idx]
+        else:
+            return sum_candidates[idx], token_count[idx][0]
 
     def shorten(self, approach):
         self.approach = approach
@@ -152,9 +163,6 @@ class SentenceLevel:
             
         elif self.approach == "textrank":
             source_text_short, source_text_short_len = self._get_textrank()
-
-#         elif self.approach == "bertbased":
-#             source_text_short, source_text_short_len = self._get_bertbased(self.source_text, self.source_ids, self.max_source_len)
         
         elif self.approach == "kmeansbert":
             source_text_short, source_text_short_len = self._get_kmeansbert(self.source_text)

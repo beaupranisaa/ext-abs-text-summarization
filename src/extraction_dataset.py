@@ -74,7 +74,7 @@ class Dataset(Dataset):
             approach = SentenceLevel(self.source_text[index], source_ids, source_len, self.max_source_len)
             
         source_text_short, source_text_short_len = approach.shorten(self.approach)
-
+        
         return {
             "ids": ids,
             "source_text": source_text,

@@ -34,8 +34,8 @@ def get_dataset( mode, config, args):
     
     ## preprocessed_data.rename(columns = {'Sample ids':'id'}, inplace = True)
     total_row = df.shape[0]
-    df = df[21:]
-    df.set_index(np.arange(0, total_row-21), inplace=True)
+    df = df[126:]
+    df.set_index(np.arange(0, total_row-126), inplace=True)
     
     
     config['source_text'] = 'document'
@@ -88,7 +88,7 @@ def process(loader, config, args, mode):
         os.makedirs(path)
 
     for _, data in enumerate(loader, 0):
-        _ = _ + 7
+        _ = _ + 42
         results['Sample ids'].extend(data['ids'].tolist())
         results['Document'].extend(data['source_text'])
         results['Shortened Document'].extend(data['shortened_source_text'])
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     torch.backends.cudnn.deterministic = True
 
     train_loader, val_loader, test_loader = preparedata(config, args)
-    # process(test_loader, config, args, "test_set")
-    process(val_loader, config, args, "val_set")
+    process(test_loader, config, args, "test_set")
+    # process(val_loader, config, args, "val_set")
     # process(train_loader, config, args, "train_set")
      
