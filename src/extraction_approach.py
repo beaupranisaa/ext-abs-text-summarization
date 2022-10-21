@@ -131,13 +131,22 @@ class SentenceLevel:
             start = 5
             end = sentence_count-2
         else:
+            print("hi")
             start = 0
             end = sentence_count
         print('start: ', start,'end: ',end)
         
+        # print(self.source_text)
         for i in range(start,end):
-            summary = summarizer(self.source_text,i)
-            full_summary = ' '.join([sentence for sentence in summary])
+            try:
+                summary = summarizer(self.source_text,i)
+                full_summary = ' '.join([sentence for sentence in summary])
+            # print(summary)
+            except:
+                print('HI')
+                approach = TokenLevel(self.source_text, self.source_ids, self.source_len, self.max_source_len)
+                full_summary, _ = approach.shorten('head-only')
+                # print(full_summary)
             sum_candidates.append(full_summary)           
             
         source = self.tokenizer.batch_encode_plus(sum_candidates, max_length = 1024, pad_to_max_length=True, truncation=True, padding="max_length", return_tensors="pt", ) 
